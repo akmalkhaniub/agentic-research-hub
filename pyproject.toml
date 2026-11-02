@@ -1,0 +1,27 @@
+[project]
+name = "agentic-research-hub"
+version = "0.1.0"
+description = "Personal research hub for agentic AI systems, architectures, experiments & deployment"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "pydantic>=2.9.0",
+    "httpx>=0.27.0",
+    "feedparser>=6.0.11",
+    "beautifulsoup4>=4.12.3",
+    "python-dotenv>=1.0.1",
+    "aiosqlite>=0.20.0",
+    "sqlalchemy>=2.0.35",
+    "google-genai>=0.1.1",
+    "nbformat>=5.10.4",
+    "greenlet>=3.5.6",
+]
+
+[tool.uv]
+package = false
+dev-dependencies = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+]
