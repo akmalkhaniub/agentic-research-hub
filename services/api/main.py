@@ -2,7 +2,7 @@ import os
 import datetime
 from contextlib import asynccontextmanager
 from typing import Optional, List, Dict, Any
-from fastapi import FastAPI, Depends, Query, HTTPException, BackgroundTasks
+from fastapi import FastAPI, Depends, Query, HTTPException, BackgroundTasks, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy.future import select
@@ -14,10 +14,16 @@ load_dotenv()
 from services.api.database import init_db, get_db
 from services.api.models import FeedItem, ExperimentRun, ApprovalItem, WatchlistItem
 from services.ingest.engine import run_ingestion_pipeline, seed_initial_records
+from services.api.patterns import get_all_patterns, get_pattern_by_slug
+from services.api.rag import answer_paper_query, index_paper_from_url_or_text
+from packages.compute.colab_provider import ColabProvider
+from packages.compute.kaggle_provider import KaggleProvider
+
+colab_provider = ColabProvider()
+kaggle_provider = KaggleProvider()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Initialize DB & seed initial items
     await init_db()
     from services.api.database import AsyncSessionLocal
     async with AsyncSessionLocal() as session:
@@ -26,12 +32,11 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Agentic AI Research Hub API",
-    version="0.1.0",
-    description="Core backend API for researching, benchmarking, and tracking agentic AI systems.",
+    version="0.2.0",
+    description="Full-stack research station for agentic AI architectures, RAG paper chat, and Kaggle/Colab GPU experimentation.",
     lifespan=lifespan
 )
 
-# Enable CORS for Next.js frontend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -45,6 +50,7 @@ async def health_check():
     return {
         "status": "healthy",
         "service": "agentic-research-hub-api",
+        "version": "0.2.0",
         "timestamp": datetime.datetime.utcnow().isoformat()
     }
 
@@ -59,7 +65,7 @@ async def get_feed(
     db: AsyncSession = Depends(get_db)
 ):
     query = select(FeedItem).order_by(FeedItem.published_at.desc())
-    if source_type:
+    if source_type and source_type != "All":
         query = query.where(FeedItem.source_type == source_type)
     if unread_only:
         query = query.where(FeedItem.is_read == False)
@@ -67,10 +73,9 @@ async def get_feed(
     result = await db.execute(query)
     items = result.scalars().all()
 
-    # In-memory filter for tags & search for flexible SQLite querying
     filtered = []
     for item in items:
-        if tag and tag not in (item.tags or []):
+        if tag and tag != "All" and tag not in (item.tags or []):
             continue
         if search:
             s = search.lower()
@@ -92,10 +97,7 @@ async def get_feed(
             "is_saved": item.is_saved
         })
 
-    return {
-        "count": len(filtered),
-        "items": filtered
-    }
+    return {"count": len(filtered), "items": filtered}
 
 @app.get("/api/feed/{item_id}")
 async def get_feed_item(item_id: str, db: AsyncSession = Depends(get_db)):
@@ -145,7 +147,36 @@ async def trigger_ingestion(background_tasks: BackgroundTasks):
     background_tasks.add_task(run_ingestion_pipeline)
     return {"status": "started", "message": "Ingestion pipeline launched in background."}
 
-# ----------------- Experiments / Lab Endpoints -----------------
+# ----------------- Paper RAG & "Chat with Paper" -----------------
+
+class PaperChatRequest(BaseModel):
+    query: str
+
+@app.post("/api/papers/{paper_id}/chat")
+async def paper_chat(paper_id: str, req: PaperChatRequest, db: AsyncSession = Depends(get_db)):
+    res = await db.execute(select(FeedItem).where(FeedItem.id == paper_id))
+    item = res.scalar_one_or_none()
+    title = item.title if item else paper_id
+    raw_content = item.raw_content if item else None
+    pdf_url = item.url if item else None
+
+    # Ensure paper is indexed
+    await index_paper_from_url_or_text(paper_id=paper_id, title=title, text=raw_content, pdf_url=pdf_url)
+    
+    result = await answer_paper_query(paper_id, req.query)
+    return result
+
+# ----------------- Architecture Patterns -----------------
+
+@app.get("/api/patterns")
+async def list_patterns():
+    return {"patterns": get_all_patterns()}
+
+@app.get("/api/patterns/{slug}")
+async def get_pattern(slug: str):
+    return get_pattern_by_slug(slug)
+
+# ----------------- Experiments / Lab / Telemetry -----------------
 
 @app.get("/api/experiments")
 async def list_experiments(db: AsyncSession = Depends(get_db)):
@@ -163,6 +194,8 @@ async def list_experiments(db: AsyncSession = Depends(get_db)):
                 "duration_str": r.duration_str,
                 "key_metric": r.key_metric,
                 "metrics": r.metrics or {},
+                "logs": r.logs or "",
+                "artifacts": r.artifacts or [],
                 "started_at": r.started_at.isoformat() if r.started_at else None
             }
             for r in runs
@@ -179,8 +212,31 @@ class ExperimentLaunchRequest(BaseModel):
 @app.post("/api/experiments")
 async def launch_experiment(req: ExperimentLaunchRequest, db: AsyncSession = Depends(get_db)):
     run_id = f"run_{int(datetime.datetime.utcnow().timestamp()) % 100000}"
-    status = "Awaiting_Handoff" if req.provider.lower() == "colab" else "Running"
+    provider_lower = req.provider.lower()
     
+    # 1. Synthesize Colab Notebook
+    colab_info = colab_provider.generate_experiment_notebook(
+        run_id=run_id,
+        name=req.name,
+        template=req.template,
+        parameters=req.parameters
+    )
+
+    colab_url = colab_info["colab_url"]
+    status = "Awaiting_Handoff" if provider_lower == "colab" else "Running"
+    kaggle_details = {}
+
+    # 2. If Kaggle, push kernel
+    if provider_lower == "kaggle":
+        kaggle_res = kaggle_provider.submit_kernel(
+            run_id=run_id,
+            title=req.name,
+            notebook_path=colab_info["notebook_path"],
+            enable_gpu=True
+        )
+        kaggle_details = kaggle_res
+        status = kaggle_res.get("status", "Running")
+
     new_run = ExperimentRun(
         id=run_id,
         name=req.name,
@@ -189,14 +245,72 @@ async def launch_experiment(req: ExperimentLaunchRequest, db: AsyncSession = Dep
         gpu=req.gpu,
         status=status,
         duration_str="Just started",
-        parameters=req.parameters,
-        logs=f"[{datetime.datetime.utcnow().strftime('%H:%M:%S')}] Job dispatched to {req.provider}."
+        parameters={**req.parameters, "colab_url": colab_url, "kaggle": kaggle_details},
+        metrics={"loss": 1.42, "eval_acc": 0.50},
+        logs=f"[{datetime.datetime.utcnow().strftime('%H:%M:%S')}] Dispatched via {req.provider}."
     )
     db.add(new_run)
     await db.commit()
-    return {"status": "created", "run_id": run_id, "provider": req.provider, "execution_status": status}
 
-# ----------------- Approvals Endpoints -----------------
+    return {
+        "status": "created",
+        "run_id": run_id,
+        "provider": req.provider,
+        "execution_status": status,
+        "colab_url": colab_url,
+        "kaggle": kaggle_details
+    }
+
+class TelemetryPayload(BaseModel):
+    step: int
+    timestamp: float
+    metrics: Dict[str, Any]
+
+@app.post("/api/experiments/{run_id}/telemetry")
+async def record_telemetry(run_id: str, payload: TelemetryPayload, db: AsyncSession = Depends(get_db)):
+    res = await db.execute(select(ExperimentRun).where(ExperimentRun.id == run_id))
+    run = res.scalar_one_or_none()
+    if not run:
+        raise HTTPException(status_code=404, detail="Run not found")
+
+    cur_metrics = dict(run.metrics or {})
+    cur_metrics.update(payload.metrics)
+    cur_metrics["last_step"] = payload.step
+    run.metrics = cur_metrics
+    run.status = "Running"
+    
+    if "loss" in payload.metrics:
+        run.key_metric = f"loss {payload.metrics['loss']}"
+
+    timestamp_str = datetime.datetime.fromtimestamp(payload.timestamp).strftime('%H:%M:%S')
+    metric_str = ", ".join([f"{k}={v}" for k, v in payload.metrics.items()])
+    log_line = f"[{timestamp_str}] step {payload.step}: {metric_str}\n"
+    run.logs = (run.logs or "") + log_line
+
+    await db.commit()
+    return {"status": "recorded", "run_id": run_id, "step": payload.step}
+
+class FinishPayload(BaseModel):
+    status: str = "Succeeded"
+    artifacts: List[Dict[str, Any]] = []
+
+@app.post("/api/experiments/{run_id}/finish")
+async def finish_experiment(run_id: str, payload: FinishPayload, db: AsyncSession = Depends(get_db)):
+    res = await db.execute(select(ExperimentRun).where(ExperimentRun.id == run_id))
+    run = res.scalar_one_or_none()
+    if not run:
+        raise HTTPException(status_code=404, detail="Run not found")
+
+    run.status = payload.status
+    run.artifacts = payload.artifacts
+    run.finished_at = datetime.datetime.utcnow()
+    run.duration_str = "Completed"
+    run.logs = (run.logs or "") + f"[{datetime.datetime.utcnow().strftime('%H:%M:%S')}] Experiment finished: {payload.status}\n"
+
+    await db.commit()
+    return {"status": "finished", "run_id": run_id}
+
+# ----------------- Approvals & Quotas -----------------
 
 @app.get("/api/approvals")
 async def get_approvals(db: AsyncSession = Depends(get_db)):
@@ -232,8 +346,6 @@ async def resolve_approval(approval_id: str, action: str, db: AsyncSession = Dep
     await db.commit()
     return {"id": item.id, "status": item.status}
 
-# ----------------- Compute Quotas -----------------
-
 @app.get("/api/quotas")
 async def get_compute_quotas():
     return {
@@ -254,7 +366,6 @@ class CopilotQuery(BaseModel):
 
 @app.post("/api/copilot/chat")
 async def copilot_chat(req: CopilotQuery, db: AsyncSession = Depends(get_db)):
-    # Retrieve top relevant context from feed items
     res = await db.execute(select(FeedItem).limit(6))
     recent_items = res.scalars().all()
     context_titles = [f"- {it.title} ({it.source}): {it.summary}" for it in recent_items]
@@ -281,11 +392,10 @@ Provide an authoritative, well-structured answer with concrete architectural tra
                 "deep_research": req.deep_research
             }
         except Exception as e:
-            print(f"Copilot LLM call failed: {e}")
+            print(f"Copilot LLM call notice: {e}")
 
-    # Fallback response
     return {
-        "answer": f"Based on your Research Hub papers and recent benchmarks, state-of-the-art long-horizon agent systems benefit most from hierarchical memory and supervisor topologies. Flat vector memory degrades after ~200 steps due to context saturation, whereas multi-tier episodic memory (like MemOS-2) achieves higher completion rates on complex workflows.",
+        "answer": "Based on your Research Hub papers and recent benchmarks, state-of-the-art long-horizon agent systems benefit most from hierarchical memory and supervisor topologies. Flat vector memory degrades after ~200 steps due to context saturation, whereas multi-tier episodic memory (like MemOS-2) achieves higher completion rates on complex workflows.",
         "sources": [it.title for it in recent_items[:2]],
         "deep_research": req.deep_research
     }

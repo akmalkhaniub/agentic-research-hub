@@ -90,19 +90,27 @@ agentic-research-hub/
 │       │       ├── ComputeView.tsx        # Compute provider catalog and weekly quota monitors
 │       │       ├── CopilotView.tsx        # Research Copilot chat with deep research toggle
 │       │       ├── Header.tsx             # Global search, theme toggle, running-jobs counter
-│       │       ├── ItemDrawer.tsx         # Slide-out technical summary, why-it-matters & GPU trigger
+│       │       ├── ItemDrawer.tsx         # Slide-out technical summary, "Chat with Paper" RAG & GPU trigger
 │       │       ├── LabView.tsx            # Experiment manager with Kaggle telemetry & Colab handoff
+│       │       ├── PatternsView.tsx       # Interactive architecture pattern visualizer & code tabs
 │       │       ├── RadarFeed.tsx          # Faceted feed with type filters & topic taxonomy tags
 │       │       ├── Sidebar.tsx            # Tactile navigation grouped by Discover, Knowledge, Build, Assist
 │       │       └── TodayView.tsx          # Daily executive briefing, top picks & active runs
 │       ├── package.json                   # Next.js 16, React 19, Lucide, Tailwind CSS
 │       ├── tailwind.config.ts             # Semantic design system tokens
 │       └── tsconfig.json                  # TypeScript strict compiler configuration
+├── packages/
+│   └── compute/                           # Pluggable Zero-Cost Compute Providers
+│       ├── colab_provider.py              # Dynamic .ipynb synthesizer with 1-click Colab handoff link
+│       ├── hub_reporter.py                # Zero-dependency telemetry client embedded into notebooks
+│       └── kaggle_provider.py             # Headless Kaggle API kernel submitter (30h/wk T4x2 GPU)
 ├── services/
 │   ├── api/                               # FastAPI Async REST Backend
 │   │   ├── database.py                    # Async SQLAlchemy 2.0 engine + SQLite aiosqlite
 │   │   ├── main.py                        # FastAPI endpoints with CORS, Pydantic v2 schemas & lifespan
-│   │   └── models.py                      # Declarative ORM models: FeedItem, ExperimentRun, ApprovalItem
+│   │   ├── models.py                      # Declarative ORM models: FeedItem, ExperimentRun, ApprovalItem
+│   │   ├── patterns.py                    # 9 canonical topologies with LangGraph, ADK & CrewAI code
+│   │   └── rag.py                         # Multi-page PDF chunking, vector cosine search & citations
 │   └── ingest/                            # Multi-Source Ingestion Pipeline
 │       ├── collectors/
 │       │   ├── arxiv.py                   # arXiv API client with agentic keyword matching

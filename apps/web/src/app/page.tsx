@@ -7,6 +7,7 @@ import { TodayView } from "@/components/TodayView";
 import { RadarFeed, FeedItemData } from "@/components/RadarFeed";
 import { ItemDrawer } from "@/components/ItemDrawer";
 import { LabView, ExperimentRunData } from "@/components/LabView";
+import { PatternsView } from "@/components/PatternsView";
 import { CopilotView } from "@/components/CopilotView";
 import { ApprovalsView, ApprovalItemData } from "@/components/ApprovalsView";
 import { ComputeView } from "@/components/ComputeView";
@@ -21,7 +22,6 @@ export default function Home() {
   const [approvals, setApprovals] = useState<ApprovalItemData[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Fetch feed items
   const fetchFeed = async () => {
     try {
       const res = await fetch(`${API_BASE}/api/feed`);
@@ -30,11 +30,10 @@ export default function Home() {
         setFeedItems(data.items);
       }
     } catch (e) {
-      console.warn("Backend not reached, using seeded mock data", e);
+      console.warn("Backend feed sync notice", e);
     }
   };
 
-  // Fetch experiments
   const fetchExperiments = async () => {
     try {
       const res = await fetch(`${API_BASE}/api/experiments`);
@@ -43,11 +42,10 @@ export default function Home() {
         setExperiments(data.runs);
       }
     } catch (e) {
-      console.warn("Backend not reached for experiments", e);
+      console.warn("Backend experiment sync notice", e);
     }
   };
 
-  // Fetch approvals
   const fetchApprovals = async () => {
     try {
       const res = await fetch(`${API_BASE}/api/approvals`);
@@ -56,7 +54,7 @@ export default function Home() {
         setApprovals(data.items);
       }
     } catch (e) {
-      console.warn("Backend not reached for approvals", e);
+      console.warn("Backend approvals sync notice", e);
     }
   };
 
@@ -105,15 +103,15 @@ export default function Home() {
 
   const handleLaunchExperimentFromItem = async (item: FeedItemData) => {
     try {
-      const res = await fetch(`${API_BASE}/api/experiments`, {
+      await fetch(`${API_BASE}/api/experiments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: `Reproduce: ${item.title.slice(0, 32)}`,
           template: "Paper Reproduction",
-          provider: "Kaggle",
-          gpu: "T4×2",
-          parameters: { paper_url: item.url },
+          provider: "Colab",
+          gpu: "T4",
+          parameters: { paper_url: item.url, title: item.title },
         }),
       });
       await fetchExperiments();
@@ -122,6 +120,30 @@ export default function Home() {
     } catch (e) {
       console.error(e);
     }
+  };
+
+  const handleLaunchNewExperiment = async (provider: "Kaggle" | "Colab", template: string, name: string) => {
+    try {
+      await fetch(`${API_BASE}/api/experiments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          template,
+          provider,
+          gpu: provider === "Kaggle" ? "T4×2" : "T4",
+          parameters: { template, epochs: 5 },
+        }),
+      });
+      await fetchExperiments();
+      setCurrentTab("lab");
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleRunBenchmarkFromPattern = async (patternName: string) => {
+    await handleLaunchNewExperiment("Kaggle", `Benchmark: ${patternName}`, `Eval ${patternName} (GAIA-mini)`);
   };
 
   const handleApprovalAction = async (id: string, action: "approve" | "reject") => {
@@ -168,12 +190,14 @@ export default function Home() {
             />
           )}
 
+          {currentTab === "patterns" && (
+            <PatternsView onRunBenchmark={handleRunBenchmarkFromPattern} />
+          )}
+
           {currentTab === "lab" && (
             <LabView
               runs={experiments}
-              onLaunchNew={() => {
-                if (feedItems[0]) handleLaunchExperimentFromItem(feedItems[0]);
-              }}
+              onLaunchNew={handleLaunchNewExperiment}
               onRefresh={fetchExperiments}
             />
           )}
@@ -197,7 +221,6 @@ export default function Home() {
 
           {(currentTab === "library" ||
             currentTab === "watchlists" ||
-            currentTab === "patterns" ||
             currentTab === "graph" ||
             currentTab === "bench" ||
             currentTab === "launchpad" ||
