@@ -16,6 +16,10 @@ from services.api.models import FeedItem, ExperimentRun, ApprovalItem, Watchlist
 from services.ingest.engine import run_ingestion_pipeline, seed_initial_records
 from services.api.patterns import get_all_patterns, get_pattern_by_slug
 from services.api.rag import answer_paper_query, index_paper_from_url_or_text
+from services.api.graph import get_knowledge_graph, get_node_details
+from services.api.bench import get_benchmark_suites, get_leaderboard
+from services.api.library import COLLECTIONS, export_library_item
+from services.api.launchpad import get_launchpad_templates, get_launchpad_template_by_id
 from packages.compute.colab_provider import ColabProvider
 from packages.compute.kaggle_provider import KaggleProvider
 
@@ -399,3 +403,74 @@ Provide an authoritative, well-structured answer with concrete architectural tra
         "sources": [it.title for it in recent_items[:2]],
         "deep_research": req.deep_research
     }
+
+# ----------------- Knowledge Graph -----------------
+
+@app.get("/api/graph")
+async def get_graph():
+    return get_knowledge_graph()
+
+@app.get("/api/graph/nodes/{node_id}")
+async def get_graph_node(node_id: str):
+    node = get_node_details(node_id)
+    if not node:
+        raise HTTPException(status_code=404, detail="Node not found in knowledge graph")
+    return node
+
+# ----------------- Benchmarking & Leaderboard -----------------
+
+@app.get("/api/bench/suites")
+async def list_benchmark_suites():
+    return {"suites": get_benchmark_suites()}
+
+@app.get("/api/bench/leaderboard")
+async def list_leaderboard(suite_id: Optional[str] = Query(None)):
+    return {"entries": get_leaderboard(suite_id)}
+
+# ----------------- Personal Library & Export -----------------
+
+@app.get("/api/library/collections")
+async def list_library_collections():
+    return {"collections": COLLECTIONS}
+
+class ExportRequest(BaseModel):
+    item_id: str
+    format: str = "markdown"  # markdown, obsidian, bibtex
+
+@app.post("/api/library/export")
+async def export_item(req: ExportRequest, db: AsyncSession = Depends(get_db)):
+    res = await db.execute(select(FeedItem).where(FeedItem.id == req.item_id))
+    item = res.scalar_one_or_none()
+    if not item:
+        # Fallback to seed item if not in DB
+        from services.ingest.engine import SEED_ITEMS
+        seed_match = next((s for s in SEED_ITEMS if s["id"] == req.item_id), None)
+        if seed_match:
+            content = export_library_item(seed_match, req.format)
+            return {"format": req.format, "content": content}
+        raise HTTPException(status_code=404, detail="Item not found for export")
+    
+    item_dict = {
+        "id": item.id,
+        "title": item.title,
+        "author": item.author or "Unknown",
+        "url": item.url,
+        "summary": item.summary,
+        "why_it_matters": item.why_it_matters,
+        "tags": item.tags or []
+    }
+    content = export_library_item(item_dict, req.format)
+    return {"format": req.format, "content": content}
+
+# ----------------- Cloud Launchpad -----------------
+
+@app.get("/api/launchpad/templates")
+async def list_launchpad_templates():
+    return {"templates": get_launchpad_templates()}
+
+@app.get("/api/launchpad/templates/{template_id}")
+async def get_launchpad_template(template_id: str):
+    template = get_launchpad_template_by_id(template_id)
+    if not template:
+        raise HTTPException(status_code=404, detail="Deployment template not found")
+    return template

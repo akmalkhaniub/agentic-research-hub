@@ -8,6 +8,10 @@ import { RadarFeed, FeedItemData } from "@/components/RadarFeed";
 import { ItemDrawer } from "@/components/ItemDrawer";
 import { LabView, ExperimentRunData } from "@/components/LabView";
 import { PatternsView } from "@/components/PatternsView";
+import { GraphView } from "@/components/GraphView";
+import { BenchView } from "@/components/BenchView";
+import { LibraryView } from "@/components/LibraryView";
+import { LaunchpadView } from "@/components/LaunchpadView";
 import { CopilotView } from "@/components/CopilotView";
 import { ApprovalsView, ApprovalItemData } from "@/components/ApprovalsView";
 import { ComputeView } from "@/components/ComputeView";
@@ -219,12 +223,29 @@ export default function Home() {
 
           {currentTab === "compute" && <ComputeView />}
 
-          {(currentTab === "library" ||
-            currentTab === "watchlists" ||
-            currentTab === "graph" ||
-            currentTab === "bench" ||
-            currentTab === "launchpad" ||
-            currentTab === "settings") && (
+          {currentTab === "library" && (
+            <LibraryView
+              items={feedItems}
+              onOpenItem={(item) => setSelectedItem(item)}
+              onToggleSave={handleToggleSave}
+            />
+          )}
+
+          {currentTab === "graph" && (
+            <GraphView onRunBenchmark={handleRunBenchmarkFromPattern} />
+          )}
+
+          {currentTab === "bench" && (
+            <BenchView
+              onDispatchBenchmark={(suite, contender, prov) =>
+                handleLaunchNewExperiment(prov, `Suite: ${suite}`, contender)
+              }
+            />
+          )}
+
+          {currentTab === "launchpad" && <LaunchpadView />}
+
+          {(currentTab === "watchlists" || currentTab === "settings") && (
             <div className="max-w-4xl mx-auto p-12 text-center border border-dashed border-border rounded-2xl bg-card">
               <h3 className="font-semibold text-base text-foreground capitalize">
                 {currentTab.replace("-", " ")} Module

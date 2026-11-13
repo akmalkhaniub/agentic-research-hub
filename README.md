@@ -66,6 +66,10 @@ flowchart TB
 | :--- | :--- | :--- | :--- |
 | **Radar Feed** | Real-time paper, framework release, and lab post triage with faceted search. | arXiv XML API + GitHub v3 REST + RSS XML Parser. | Free public APIs |
 | **Today Briefing** | Daily executive AI briefing, top ranked picks, active GPU run telemetry, and quota meters. | Next.js 16 SSR + Gemini 2.5 Flash synthesis. | Gemini API Free Tier |
+| **Knowledge Graph** | Interactive topology graph connecting papers, frameworks, agent topologies, protocols & benchmarks. | Directed Graph Model + Category-driven layout & node inspector. | Local / Zero-cost |
+| **Bench Leaderboard** | Empirical evaluation suites (GAIA-mini, τ²-bench, ToolBench, HumanEval) with 1-click GPU dispatch. | Standardized benchmark metrics (Success Rate, Latency, Cost/Task). | Kaggle (30h/wk GPU) + Colab |
+| **Personal Library** | Curated research collections (Core, Read Next, Topologies, Eval Protocols) with Obsidian/BibTeX export. | Async SQLite + Semantic tag aggregation + Literature Note Synthesizer. | Local / Zero-cost |
+| **Cloud Launchpad** | Scale-to-zero deployment blueprints (Cloud Run, MCP SSE Server, AWS Lambda, Hugging Face Spaces). | Interactive Terraform HCL, multi-stage Dockerfiles & CLI generators. | Free Tier Cloud |
 | **Lab (GPU Runner)** | Automated Kaggle notebook execution and Colab 3-step handoff with `hub_reporter` metrics. | Kaggle CLI / REST API + nbformat + Papermill. | Kaggle (30 GPU-h/wk) + Colab T4 |
 | **Research Copilot** | Deep-research question answering citing ingested literature with step-by-step reasoning. | Async FastAPI + Structured JSON Constrained Generation. | Gemini Free Tier / Groq fallback |
 | **Approvals Gate** | Human-in-the-Loop circuit breaker for actions consuming GPU quotas or triggering cloud IaC. | SQLite State Machine (`Pending` $\rightarrow$ `Approved` / `Rejected`). | Local / Zero-cost |
@@ -74,7 +78,32 @@ flowchart TB
 
 ---
 
-## 3. Repository Structure
+## 3. Advanced Research & Evaluation Capabilities
+
+### A. Knowledge Graph & Topology Relationship Explorer
+Connects theoretical agentic research with concrete software frameworks and real-world protocols:
+- **Relational Ontologies**: Traces connections between published papers (e.g. *Reflexion*, *ReAct*, *Tree of Thoughts*), production runtimes (LangGraph, CrewAI, AutoGen, ADK), standard protocols (Model Context Protocol, Agent-to-Agent A2A), and empirical benchmarks.
+- **Bi-Directional Querying**: Filter nodes across Categories (`Paper`, `Framework`, `Topology`, `Protocol`, `Benchmark`) or inspect an individual entity to explore incoming and outgoing relational dependencies.
+
+### B. Agent Benchmarking & Empirical Leaderboard
+Standardized evaluation suite and leaderboard across agentic benchmarks:
+- **Supported Suites**: GAIA-mini (complex multi-modal web search), $\tau^2$-bench (telecom customer care tool-use), ToolBench (rapid multi-tool selection), and HumanEval-Agentic (iterative code synthesis & repair).
+- **Leaderboard Metrics**: Tracks Success Rate, Mean Latency (seconds), Cost per Task (\$USD), and Self-Healing Recovery Rate.
+- **1-Click Free-Tier Runner**: Dispatches automated Kaggle GPU evaluation kernels (30 hours/week free GPU) or prepares parameterized Google Colab notebooks with embedded webhooks for zero-cost reproduction.
+
+### C. Personal Research Library & Obsidian/BibTeX Exporter
+Curated workspace for research synthesis and personal knowledge management:
+- **Curated Collections**: Automated clustering into `Core Foundation`, `Active Read Queue`, `Agentic Topologies`, `Eval & Safety Protocols`, and `Saved for Later`.
+- **Zero-Loss Literature Exports**: 1-click generation of formatted notes ready for Obsidian (`[[wikilinks]]`, YAML frontmatter, BibTeX keys) or academic BibTeX citation blocks for LaTeX/Overleaf.
+
+### D. Scale-to-Zero Cloud Launchpad
+Turn prototype agent architectures into production deployments within cloud free-tier envelopes:
+- **Blueprints**: Google Cloud Run (FastAPI + Litestar async), MCP Remote SSE Server, AWS Lambda Serverless Agent, and Hugging Face Spaces (Gradio + FastAPI).
+- **Interactive IaC Generator**: Copy ready-to-run Terraform HCL, multi-stage optimized Dockerfiles (`uv` multi-stage build), or 1-line deployment CLI commands with zero cold-start overhead.
+
+---
+
+## 4. Repository Structure
 
 ```text
 agentic-research-hub/
@@ -87,11 +116,15 @@ agentic-research-hub/
 │       │   │   └── page.tsx               # Primary application shell & state coordinator
 │       │   └── components/
 │       │       ├── ApprovalsView.tsx      # Human-in-the-Loop approval gate for spend & compute
+│       │       ├── BenchView.tsx          # Agent benchmarking suite & empirical leaderboard
 │       │       ├── ComputeView.tsx        # Compute provider catalog and weekly quota monitors
 │       │       ├── CopilotView.tsx        # Research Copilot chat with deep research toggle
+│       │       ├── GraphView.tsx          # Interactive knowledge & topology relationship graph
 │       │       ├── Header.tsx             # Global search, theme toggle, running-jobs counter
 │       │       ├── ItemDrawer.tsx         # Slide-out technical summary, "Chat with Paper" RAG & GPU trigger
 │       │       ├── LabView.tsx            # Experiment manager with Kaggle telemetry & Colab handoff
+│       │       ├── LaunchpadView.tsx      # Scale-to-zero cloud deployment blueprints & IaC generator
+│       │       ├── LibraryView.tsx        # Curated personal research library & Obsidian/BibTeX exporter
 │       │       ├── PatternsView.tsx       # Interactive architecture pattern visualizer & code tabs
 │       │       ├── RadarFeed.tsx          # Faceted feed with type filters & topic taxonomy tags
 │       │       ├── Sidebar.tsx            # Tactile navigation grouped by Discover, Knowledge, Build, Assist
@@ -106,7 +139,11 @@ agentic-research-hub/
 │       └── kaggle_provider.py             # Headless Kaggle API kernel submitter (30h/wk T4x2 GPU)
 ├── services/
 │   ├── api/                               # FastAPI Async REST Backend
+│   │   ├── bench.py                       # Benchmarking suites, leaderboard entries & runner dispatch
 │   │   ├── database.py                    # Async SQLAlchemy 2.0 engine + SQLite aiosqlite
+│   │   ├── graph.py                       # Knowledge graph node/edge definitions & relational queries
+│   │   ├── launchpad.py                   # Scale-to-zero cloud blueprints (Terraform, Dockerfile, CLI)
+│   │   ├── library.py                     # Collections organizer & Markdown/Obsidian/BibTeX exporter
 │   │   ├── main.py                        # FastAPI endpoints with CORS, Pydantic v2 schemas & lifespan
 │   │   ├── models.py                      # Declarative ORM models: FeedItem, ExperimentRun, ApprovalItem
 │   │   ├── patterns.py                    # 9 canonical topologies with LangGraph, ADK & CrewAI code
@@ -129,7 +166,7 @@ agentic-research-hub/
 
 ---
 
-## 4. Quickstart
+## 5. Quickstart
 
 ### Prerequisites
 - **Node.js** v20+ / v24+
@@ -174,7 +211,7 @@ Visit [`http://localhost:3000`](http://localhost:3000) to open the interactive R
 
 ---
 
-## 5. REST API Reference
+## 6. REST API Reference
 
 The backend provides strict Pydantic v2 contracts with comprehensive typing:
 
@@ -185,6 +222,13 @@ The backend provides strict Pydantic v2 contracts with comprehensive typing:
 | `GET` | `/api/feed/{item_id}` | Retrieves full paper/release details including raw content and technical rationale. |
 | `PATCH` | `/api/feed/{item_id}/triage` | Toggles read state (`is_read`) or bookmarks item to personal Library (`is_saved`). |
 | `POST` | `/api/ingest` | Triggers background multi-source scanning across arXiv, GitHub Releases, and RSS feeds. |
+| `GET` | `/api/graph` | Returns the complete knowledge graph (nodes, edges, categories) linking papers to frameworks. |
+| `GET` | `/api/bench/suites` | Lists standardized evaluation benchmarks (GAIA-mini, τ²-bench, ToolBench, HumanEval). |
+| `GET` | `/api/bench/leaderboard` | Returns empirical benchmark leaderboard with success rates, latencies, and costs. |
+| `POST` | `/api/bench/run` | Triggers benchmark execution on Kaggle GPU kernel or generates Colab evaluation runner. |
+| `GET` | `/api/library/collections`| Returns curated research collections, unread queues, and saved paper clusters. |
+| `POST` | `/api/library/export` | Generates comprehensive literature note exports in Obsidian Markdown or BibTeX. |
+| `GET` | `/api/launchpad/templates`| Lists scale-to-zero deployment templates with complete Terraform, Dockerfiles, and CLIs. |
 | `GET` | `/api/experiments` | Returns active and historical GPU experiment runs with live metrics and logs. |
 | `POST` | `/api/experiments` | Dispatches new GPU experiment to Kaggle API or prepares Google Colab handoff. |
 | `GET` | `/api/approvals` | Returns pending Human-in-the-Loop approval requests requiring manual sign-off. |
@@ -194,7 +238,7 @@ The backend provides strict Pydantic v2 contracts with comprehensive typing:
 
 ---
 
-## 6. Compute & Free-Tier GPU Orchestration
+## 7. Compute & Free-Tier GPU Orchestration
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────────┐
@@ -214,7 +258,7 @@ The backend provides strict Pydantic v2 contracts with comprehensive typing:
 
 ---
 
-## 7. Cloud Deployment Runbook (Zero-Cost GCP Free Tier)
+## 8. Cloud Deployment Runbook (Zero-Cost GCP Free Tier)
 
 Deploy the backend to Google Cloud Run within the permanent free tier (2 million requests/month):
 
@@ -240,6 +284,6 @@ gcloud scheduler jobs create http daily-radar-scan \
 
 ---
 
-## 8. License
+## 9. License
 
 Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for complete terms.
