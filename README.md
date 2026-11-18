@@ -66,10 +66,13 @@ flowchart TB
 | :--- | :--- | :--- | :--- |
 | **Radar Feed** | Real-time paper, framework release, and lab post triage with faceted search. | arXiv XML API + GitHub v3 REST + RSS XML Parser. | Free public APIs |
 | **Today Briefing** | Daily executive AI briefing, top ranked picks, active GPU run telemetry, and quota meters. | Next.js 16 SSR + Gemini 2.5 Flash synthesis. | Gemini API Free Tier |
+| **Smart Watchlists** | Automated entity alerts for authors, framework releases, memory architectures & benchmark suites. | Real-time boolean query matcher + live in-app/webhook event triggers. | Local / Zero-cost |
+| **Architecture Arena** | Side-by-side empirical trace simulation (ReAct vs Supervisor vs Reflexion vs Hierarchical). | Multi-agent execution simulator + Token/Latency/Cost scorecard & win analysis. | Local / Zero-cost |
 | **Knowledge Graph** | Interactive topology graph connecting papers, frameworks, agent topologies, protocols & benchmarks. | Directed Graph Model + Category-driven layout & node inspector. | Local / Zero-cost |
 | **Bench Leaderboard** | Empirical evaluation suites (GAIA-mini, τ²-bench, ToolBench, HumanEval) with 1-click GPU dispatch. | Standardized benchmark metrics (Success Rate, Latency, Cost/Task). | Kaggle (30h/wk GPU) + Colab |
 | **Personal Library** | Curated research collections (Core, Read Next, Topologies, Eval Protocols) with Obsidian/BibTeX export. | Async SQLite + Semantic tag aggregation + Literature Note Synthesizer. | Local / Zero-cost |
 | **Cloud Launchpad** | Scale-to-zero deployment blueprints (Cloud Run, MCP SSE Server, AWS Lambda, Hugging Face Spaces). | Interactive Terraform HCL, multi-stage Dockerfiles & CLI generators. | Free Tier Cloud |
+| **Hub Settings** | LLM provider routing (Gemini, Groq, Ollama), credentials manager, and connection health probes. | Live provider pingers, masked secret storage & SQLite cache telemetry. | Free Tier APIs |
 | **Lab (GPU Runner)** | Automated Kaggle notebook execution and Colab 3-step handoff with `hub_reporter` metrics. | Kaggle CLI / REST API + nbformat + Papermill. | Kaggle (30 GPU-h/wk) + Colab T4 |
 | **Research Copilot** | Deep-research question answering citing ingested literature with step-by-step reasoning. | Async FastAPI + Structured JSON Constrained Generation. | Gemini Free Tier / Groq fallback |
 | **Approvals Gate** | Human-in-the-Loop circuit breaker for actions consuming GPU quotas or triggering cloud IaC. | SQLite State Machine (`Pending` $\rightarrow$ `Approved` / `Rejected`). | Local / Zero-cost |
@@ -101,6 +104,23 @@ Turn prototype agent architectures into production deployments within cloud free
 - **Blueprints**: Google Cloud Run (FastAPI + Litestar async), MCP Remote SSE Server, AWS Lambda Serverless Agent, and Hugging Face Spaces (Gradio + FastAPI).
 - **Interactive IaC Generator**: Copy ready-to-run Terraform HCL, multi-stage optimized Dockerfiles (`uv` multi-stage build), or 1-line deployment CLI commands with zero cold-start overhead.
 
+### E. Smart Topic & Entity Watchlists
+Real-time entity tracking across ingested papers and framework updates:
+- **Targeted Monitors**: Configure boolean queries to track key authors (e.g. *Shunyu Yao*, *Noah Shinn*), framework releases (*LangGraph durable graphs*, *CrewAI hierarchical flows*), memory innovations (*MemOS-2*), and emerging protocols (*MCP*, *A2A*).
+- **On-Demand & Event Triggers**: Live notification badges, hit counters, and 1-click on-demand re-scanning across arXiv XML and GitHub Releases buffers.
+
+### F. Multi-Agent Architecture Arena & Trace Simulator
+Empirical side-by-side execution trace simulation across canonical agent topologies:
+- **Benchmark Scenarios**: Test topologies against real-world tasks including Distributed Lock Race Conditions, Multi-Tool Travel Re-Reservation ($\tau^2$-bench style), Legacy Pydantic v2 Migration, and Clinical Trial Contraindication Synthesis.
+- **Synchronized Step Traces**: Inspect role-by-role execution flows (Director, Supervisor, Specialists, Evaluator, Memory Store) with thought popovers and tool observations.
+- **Scorecards & Architectural Verdicts**: Compare Success Rate (%), Total Steps, Latency (s), Token Consumption, and Cost ($) alongside a staff-level architectural takeaway.
+
+### G. Hub Settings, Model Providers & Credential Telemetry
+Centralized control plane for runtime LLM providers and compute accounts:
+- **Dynamic Provider Switcher**: Toggle seamlessly between Google Gemini 2.5 Flash, Groq Llama 3.3 (70B at 500 t/s), and local offline Ollama instances.
+- **Live Connection Probes**: Measure round-trip ping latency and connectivity status to verify API authentication.
+- **System Telemetry**: Real-time monitoring of vector chunks, feed items count, fast RAG timeouts, and SQLite database health.
+
 ---
 
 ## 4. Repository Structure
@@ -116,6 +136,7 @@ agentic-research-hub/
 │       │   │   └── page.tsx               # Primary application shell & state coordinator
 │       │   └── components/
 │       │       ├── ApprovalsView.tsx      # Human-in-the-Loop approval gate for spend & compute
+│       │       ├── ArenaView.tsx          # Multi-agent architecture arena & trace simulator
 │       │       ├── BenchView.tsx          # Agent benchmarking suite & empirical leaderboard
 │       │       ├── ComputeView.tsx        # Compute provider catalog and weekly quota monitors
 │       │       ├── CopilotView.tsx        # Research Copilot chat with deep research toggle
@@ -127,8 +148,10 @@ agentic-research-hub/
 │       │       ├── LibraryView.tsx        # Curated personal research library & Obsidian/BibTeX exporter
 │       │       ├── PatternsView.tsx       # Interactive architecture pattern visualizer & code tabs
 │       │       ├── RadarFeed.tsx          # Faceted feed with type filters & topic taxonomy tags
+│       │       ├── SettingsView.tsx       # LLM provider switcher, connection probes & credentials
 │       │       ├── Sidebar.tsx            # Tactile navigation grouped by Discover, Knowledge, Build, Assist
-│       │       └── TodayView.tsx          # Daily executive briefing, top picks & active runs
+│       │       ├── TodayView.tsx          # Daily executive briefing, top picks & active runs
+│       │       └── WatchlistsView.tsx     # Smart topic & author entity monitors with real-time alerts
 │       ├── package.json                   # Next.js 16, React 19, Lucide, Tailwind CSS
 │       ├── tailwind.config.ts             # Semantic design system tokens
 │       └── tsconfig.json                  # TypeScript strict compiler configuration
@@ -139,6 +162,7 @@ agentic-research-hub/
 │       └── kaggle_provider.py             # Headless Kaggle API kernel submitter (30h/wk T4x2 GPU)
 ├── services/
 │   ├── api/                               # FastAPI Async REST Backend
+│   │   ├── arena.py                       # Multi-agent simulation engine, traces & scorecard math
 │   │   ├── bench.py                       # Benchmarking suites, leaderboard entries & runner dispatch
 │   │   ├── database.py                    # Async SQLAlchemy 2.0 engine + SQLite aiosqlite
 │   │   ├── graph.py                       # Knowledge graph node/edge definitions & relational queries
@@ -147,7 +171,9 @@ agentic-research-hub/
 │   │   ├── main.py                        # FastAPI endpoints with CORS, Pydantic v2 schemas & lifespan
 │   │   ├── models.py                      # Declarative ORM models: FeedItem, ExperimentRun, ApprovalItem
 │   │   ├── patterns.py                    # 9 canonical topologies with LangGraph, ADK & CrewAI code
-│   │   └── rag.py                         # Multi-page PDF chunking, vector cosine search & citations
+│   │   ├── rag.py                         # Multi-page PDF chunking, vector cosine search & citations
+│   │   ├── settings.py                    # Runtime provider configs, live health probes & cache stats
+│   │   └── watchlists.py                  # Smart topic & author entity matcher and alert triggers
 │   └── ingest/                            # Multi-Source Ingestion Pipeline
 │       ├── collectors/
 │       │   ├── arxiv.py                   # arXiv API client with agentic keyword matching
@@ -223,6 +249,15 @@ The backend provides strict Pydantic v2 contracts with comprehensive typing:
 | `PATCH` | `/api/feed/{item_id}/triage` | Toggles read state (`is_read`) or bookmarks item to personal Library (`is_saved`). |
 | `POST` | `/api/ingest` | Triggers background multi-source scanning across arXiv, GitHub Releases, and RSS feeds. |
 | `GET` | `/api/graph` | Returns the complete knowledge graph (nodes, edges, categories) linking papers to frameworks. |
+| `GET` | `/api/watchlists` | Returns configured author, framework, and topic monitors with real-time match counts. |
+| `POST` | `/api/watchlists` | Registers a new smart entity tracker with boolean keywords and channel routing. |
+| `DELETE` | `/api/watchlists/{id}` | Removes a watchlist monitor. |
+| `POST` | `/api/watchlists/{id}/scan` | Triggers on-demand scanning across recent feed items for immediate alerts. |
+| `GET` | `/api/arena/scenarios` | Lists standardized challenge scenarios and multi-agent topology contenders. |
+| `POST` | `/api/arena/simulate` | Runs head-to-head architectural simulation with step traces and comparative scorecard. |
+| `GET` | `/api/settings` | Returns active LLM provider, masked API keys status, fast RAG timeout, and DB stats. |
+| `POST` | `/api/settings` | Updates runtime inference provider, export preferences, and RAG configuration. |
+| `POST` | `/api/settings/test-connection` | Runs live round-trip latency and handshake verification ping to selected model provider. |
 | `GET` | `/api/bench/suites` | Lists standardized evaluation benchmarks (GAIA-mini, τ²-bench, ToolBench, HumanEval). |
 | `GET` | `/api/bench/leaderboard` | Returns empirical benchmark leaderboard with success rates, latencies, and costs. |
 | `POST` | `/api/bench/run` | Triggers benchmark execution on Kaggle GPU kernel or generates Colab evaluation runner. |

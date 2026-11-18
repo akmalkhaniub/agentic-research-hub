@@ -20,6 +20,9 @@ from services.api.graph import get_knowledge_graph, get_node_details
 from services.api.bench import get_benchmark_suites, get_leaderboard
 from services.api.library import COLLECTIONS, export_library_item
 from services.api.launchpad import get_launchpad_templates, get_launchpad_template_by_id
+from services.api.watchlists import get_all_watchlists, match_feed_items_against_watchlist, DEFAULT_WATCHLISTS
+from services.api.arena import get_scenarios, simulate_arena_battle, CONTENDER_SPECS
+from services.api.settings import get_settings, update_settings, test_provider_connection
 from packages.compute.colab_provider import ColabProvider
 from packages.compute.kaggle_provider import KaggleProvider
 
@@ -474,3 +477,133 @@ async def get_launchpad_template(template_id: str):
     if not template:
         raise HTTPException(status_code=404, detail="Deployment template not found")
     return template
+
+# ----------------- Smart Watchlists -----------------
+
+class CreateWatchlistRequest(BaseModel):
+    name: str
+    query: str
+    category: str = "Topic"
+    channel: str = "In-app"
+    tags: List[str] = []
+
+@app.get("/api/watchlists")
+async def list_watchlists(db: AsyncSession = Depends(get_db)):
+    # Fetch recent feed items to compute real-time matches
+    res = await db.execute(select(FeedItem).limit(50))
+    feed_items = [
+        {
+            "id": it.id,
+            "title": it.title,
+            "source": it.source,
+            "summary": it.summary,
+            "tags": it.tags or [],
+            "relevance": it.relevance
+        }
+        for it in res.scalars().all()
+    ]
+
+    watchlists_data = []
+    for wl in DEFAULT_WATCHLISTS:
+        matched = match_feed_items_against_watchlist(wl, feed_items)
+        watchlists_data.append({
+            **wl,
+            "hit_count": max(wl.get("hit_count", 0), len(matched)),
+            "matched_items": matched[:4]
+        })
+    return {"watchlists": watchlists_data}
+
+@app.post("/api/watchlists")
+async def create_watchlist(req: CreateWatchlistRequest):
+    new_wl = {
+        "id": f"wl_{int(datetime.datetime.utcnow().timestamp())}",
+        "name": req.name,
+        "category": req.category,
+        "query": req.query,
+        "tags": req.tags or [req.category],
+        "channel": req.channel,
+        "active": True,
+        "hit_count": 0,
+        "last_matched": "Just now",
+        "created_at": datetime.datetime.utcnow().isoformat()
+    }
+    DEFAULT_WATCHLISTS.insert(0, new_wl)
+    return new_wl
+
+@app.delete("/api/watchlists/{watchlist_id}")
+async def delete_watchlist(watchlist_id: str):
+    global DEFAULT_WATCHLISTS
+    DEFAULT_WATCHLISTS = [w for w in DEFAULT_WATCHLISTS if w["id"] != watchlist_id]
+    return {"status": "deleted", "id": watchlist_id}
+
+@app.post("/api/watchlists/{watchlist_id}/scan")
+async def scan_watchlist(watchlist_id: str, db: AsyncSession = Depends(get_db)):
+    wl = next((w for w in DEFAULT_WATCHLISTS if w["id"] == watchlist_id), None)
+    if not wl:
+        raise HTTPException(status_code=404, detail="Watchlist not found")
+    
+    res = await db.execute(select(FeedItem).limit(100))
+    feed_items = [
+        {
+            "id": it.id,
+            "title": it.title,
+            "source": it.source,
+            "summary": it.summary,
+            "tags": it.tags or []
+        }
+        for it in res.scalars().all()
+    ]
+    matched = match_feed_items_against_watchlist(wl, feed_items)
+    wl["hit_count"] = len(matched)
+    wl["last_matched"] = "Just now"
+    return {"id": watchlist_id, "hits": len(matched), "matched_items": matched[:5]}
+
+# ----------------- Architecture Arena -----------------
+
+@app.get("/api/arena/scenarios")
+async def list_arena_scenarios():
+    return {
+        "scenarios": get_scenarios(),
+        "contenders": [
+            {"id": k, **v} for k, v in CONTENDER_SPECS.items()
+        ]
+    }
+
+class SimulateRequest(BaseModel):
+    scenario_id: str
+    contender_a: str
+    contender_b: str
+
+@app.post("/api/arena/simulate")
+async def simulate_arena(req: SimulateRequest):
+    result = simulate_arena_battle(req.scenario_id, req.contender_a, req.contender_b)
+    return result
+
+# ----------------- Hub Settings & Probes -----------------
+
+@app.get("/api/settings")
+async def fetch_hub_settings():
+    return get_settings()
+
+class UpdateSettingsRequest(BaseModel):
+    active_llm_provider: Optional[str] = None
+    active_model: Optional[str] = None
+    fallback_model: Optional[str] = None
+    fast_rag_timeout_s: Optional[float] = None
+    default_export_format: Optional[str] = None
+    theme: Optional[str] = None
+    auto_refresh_minutes: Optional[int] = None
+
+@app.post("/api/settings")
+async def save_hub_settings(req: UpdateSettingsRequest):
+    updates = req.model_dump(exclude_unset=True)
+    updated = update_settings(updates)
+    return updated
+
+class TestConnectionRequest(BaseModel):
+    provider: str
+
+@app.post("/api/settings/test-connection")
+async def test_connection(req: TestConnectionRequest):
+    return test_provider_connection(req.provider)
+

@@ -50,3 +50,64 @@ def test_launchpad_endpoints(client):
         assert "terraform" in t
         assert "dockerfile" in t
         assert "cli_command" in t
+
+def test_watchlists_endpoints(client):
+    response = client.get("/api/watchlists")
+    assert response.status_code == 200
+    data = response.json()
+    assert "watchlists" in data
+    assert len(data["watchlists"]) >= 4
+
+    create_resp = client.post("/api/watchlists", json={
+        "name": "Test Tracker",
+        "query": "LangGraph",
+        "category": "Framework",
+        "channel": "In-app",
+        "tags": ["LangGraph"]
+    })
+    assert create_resp.status_code == 200
+    created_id = create_resp.json()["id"]
+
+    scan_resp = client.post(f"/api/watchlists/{created_id}/scan")
+    assert scan_resp.status_code == 200
+    assert "hits" in scan_resp.json()
+
+    del_resp = client.delete(f"/api/watchlists/{created_id}")
+    assert del_resp.status_code == 200
+
+def test_arena_endpoints(client):
+    scenarios_resp = client.get("/api/arena/scenarios")
+    assert scenarios_resp.status_code == 200
+    data = scenarios_resp.json()
+    assert "scenarios" in data
+    assert "contenders" in data
+    assert len(data["scenarios"]) >= 3
+
+    sim_resp = client.post("/api/arena/simulate", json={
+        "scenario_id": data["scenarios"][0]["id"],
+        "contender_a": "react_baseline",
+        "contender_b": "supervisor_specialists"
+    })
+    assert sim_resp.status_code == 200
+    sim_data = sim_resp.json()
+    assert "winner" in sim_data
+    assert "contender_a" in sim_data
+    assert "contender_b" in sim_data
+    assert len(sim_data["contender_a"]["trace"]) > 0
+
+def test_settings_endpoints(client):
+    settings_resp = client.get("/api/settings")
+    assert settings_resp.status_code == 200
+    settings = settings_resp.json()
+    assert "active_llm_provider" in settings
+
+    update_resp = client.post("/api/settings", json={
+        "fast_rag_timeout_s": 2.5
+    })
+    assert update_resp.status_code == 200
+    assert update_resp.json()["fast_rag_timeout_s"] == 2.5
+
+    test_conn = client.post("/api/settings/test-connection", json={"provider": "groq"})
+    assert test_conn.status_code == 200
+    assert "latency_ms" in test_conn.json()
+

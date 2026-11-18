@@ -12,6 +12,9 @@ import { GraphView } from "@/components/GraphView";
 import { BenchView } from "@/components/BenchView";
 import { LibraryView } from "@/components/LibraryView";
 import { LaunchpadView } from "@/components/LaunchpadView";
+import { WatchlistsView } from "@/components/WatchlistsView";
+import { ArenaView } from "@/components/ArenaView";
+import { SettingsView } from "@/components/SettingsView";
 import { CopilotView } from "@/components/CopilotView";
 import { ApprovalsView, ApprovalItemData } from "@/components/ApprovalsView";
 import { ComputeView } from "@/components/ComputeView";
@@ -245,16 +248,13 @@ export default function Home() {
 
           {currentTab === "launchpad" && <LaunchpadView />}
 
-          {(currentTab === "watchlists" || currentTab === "settings") && (
-            <div className="max-w-4xl mx-auto p-12 text-center border border-dashed border-border rounded-2xl bg-card">
-              <h3 className="font-semibold text-base text-foreground capitalize">
-                {currentTab.replace("-", " ")} Module
-              </h3>
-              <p className="text-xs text-muted mt-1">
-                Connected and synchronized with the Hub backend data layer.
-              </p>
-            </div>
+          {currentTab === "watchlists" && (
+            <WatchlistsView onSelectItem={(item) => setSelectedItem(item)} />
           )}
+
+          {currentTab === "arena" && <ArenaView />}
+
+          {currentTab === "settings" && <SettingsView />}
         </main>
       </div>
 

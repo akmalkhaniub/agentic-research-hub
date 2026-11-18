@@ -11,6 +11,7 @@ import {
   FlaskConical,
   Cpu,
   Scale,
+  Swords,
   Rocket,
   Sparkles,
   CheckSquare,
@@ -27,6 +28,7 @@ export type TabId =
   | "lab"
   | "compute"
   | "bench"
+  | "arena"
   | "launchpad"
   | "copilot"
   | "approvals"
@@ -65,6 +67,7 @@ export function Sidebar({ currentTab, onSelectTab, approvalsCount = 2 }: Sidebar
         { id: "lab" as TabId, label: "Lab (GPU)", icon: FlaskConical },
         { id: "compute" as TabId, label: "Compute & Quotas", icon: Cpu },
         { id: "bench" as TabId, label: "Bench & Evals", icon: Scale },
+        { id: "arena" as TabId, label: "Architecture Arena", icon: Swords },
         { id: "launchpad" as TabId, label: "Cloud Launchpad", icon: Rocket },
       ],
     },
