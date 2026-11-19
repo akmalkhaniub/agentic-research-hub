@@ -23,6 +23,9 @@ from services.api.launchpad import get_launchpad_templates, get_launchpad_templa
 from services.api.watchlists import get_all_watchlists, match_feed_items_against_watchlist, DEFAULT_WATCHLISTS
 from services.api.arena import get_scenarios, simulate_arena_battle, CONTENDER_SPECS
 from services.api.settings import get_settings, update_settings, test_provider_connection
+from services.api.studio import get_all_briefs, run_swarm_synthesis
+from services.api.memory import get_memory_state, trigger_consolidation
+from services.api.protocols import get_mcp_tools, get_a2a_agents, test_mcp_tool
 from packages.compute.colab_provider import ColabProvider
 from packages.compute.kaggle_provider import KaggleProvider
 
@@ -606,4 +609,47 @@ class TestConnectionRequest(BaseModel):
 @app.post("/api/settings/test-connection")
 async def test_connection(req: TestConnectionRequest):
     return test_provider_connection(req.provider)
+
+# ----------------- Research Studio Swarm -----------------
+
+@app.get("/api/studio/briefs")
+async def list_studio_briefs():
+    return {"briefs": get_all_briefs()}
+
+class SynthesizeTopicRequest(BaseModel):
+    topic: str
+
+@app.post("/api/studio/synthesize")
+async def synthesize_research_topic(req: SynthesizeTopicRequest):
+    brief = run_swarm_synthesis(req.topic)
+    return brief
+
+# ----------------- Cognitive Memory Inspector -----------------
+
+@app.get("/api/memory/state")
+async def fetch_memory_state():
+    return get_memory_state()
+
+@app.post("/api/memory/consolidate")
+async def consolidate_memory():
+    return trigger_consolidation()
+
+# ----------------- MCP & A2A Protocol Registry -----------------
+
+@app.get("/api/protocols/tools")
+async def list_mcp_tools():
+    return {"tools": get_mcp_tools()}
+
+class TestToolRequest(BaseModel):
+    tool_name: str
+    arguments: Dict[str, Any] = {}
+
+@app.post("/api/protocols/tools/test")
+async def execute_mcp_tool_test(req: TestToolRequest):
+    return test_mcp_tool(req.tool_name, req.arguments)
+
+@app.get("/api/protocols/a2a/agents")
+async def list_a2a_agent_cards():
+    return {"agents": get_a2a_agents()}
+
 

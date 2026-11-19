@@ -111,3 +111,50 @@ def test_settings_endpoints(client):
     assert test_conn.status_code == 200
     assert "latency_ms" in test_conn.json()
 
+def test_studio_endpoints(client):
+    resp = client.get("/api/studio/briefs")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "briefs" in data
+    assert len(data["briefs"]) >= 2
+
+    synth_resp = client.post("/api/studio/synthesize", json={
+        "topic": "Autonomous Code Repair with Reflexion"
+    })
+    assert synth_resp.status_code == 200
+    brief = synth_resp.json()
+    assert "dialogue_trace" in brief
+    assert "architect_blueprint" in brief
+
+def test_memory_endpoints(client):
+    state_resp = client.get("/api/memory/state")
+    assert state_resp.status_code == 200
+    state = state_resp.json()
+    assert "working_memory" in state
+    assert "episodic_memory" in state
+    assert "semantic_memory" in state
+
+    compact_resp = client.post("/api/memory/consolidate")
+    assert compact_resp.status_code == 200
+    data = compact_resp.json()
+    assert data["status"] == "Success"
+
+def test_protocols_endpoints(client):
+    tools_resp = client.get("/api/protocols/tools")
+    assert tools_resp.status_code == 200
+    tools = tools_resp.json().get("tools", [])
+    assert len(tools) >= 4
+
+    test_tool = client.post("/api/protocols/tools/test", json={
+        "tool_name": "arxiv_search",
+        "arguments": {"query": "LangGraph"}
+    })
+    assert test_tool.status_code == 200
+    assert test_tool.json()["status"] == "success"
+
+    agents_resp = client.get("/api/protocols/a2a/agents")
+    assert agents_resp.status_code == 200
+    agents = agents_resp.json().get("agents", [])
+    assert len(agents) >= 4
+
+

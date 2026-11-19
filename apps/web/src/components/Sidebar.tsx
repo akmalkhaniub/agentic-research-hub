@@ -16,6 +16,9 @@ import {
   Sparkles,
   CheckSquare,
   Settings,
+  Brain,
+  Layers,
+  Wand2,
 } from "lucide-react";
 
 export type TabId =
@@ -25,11 +28,14 @@ export type TabId =
   | "library"
   | "patterns"
   | "graph"
+  | "memory"
   | "lab"
   | "compute"
   | "bench"
   | "arena"
+  | "protocols"
   | "launchpad"
+  | "studio"
   | "copilot"
   | "approvals"
   | "settings";
@@ -59,6 +65,7 @@ export function Sidebar({ currentTab, onSelectTab, approvalsCount = 2 }: Sidebar
         { id: "library" as TabId, label: "Library", icon: Library },
         { id: "patterns" as TabId, label: "Architecture Patterns", icon: GitBranch },
         { id: "graph" as TabId, label: "Knowledge Graph", icon: Network },
+        { id: "memory" as TabId, label: "Memory Topology", icon: Brain },
       ],
     },
     {
@@ -68,12 +75,14 @@ export function Sidebar({ currentTab, onSelectTab, approvalsCount = 2 }: Sidebar
         { id: "compute" as TabId, label: "Compute & Quotas", icon: Cpu },
         { id: "bench" as TabId, label: "Bench & Evals", icon: Scale },
         { id: "arena" as TabId, label: "Architecture Arena", icon: Swords },
+        { id: "protocols" as TabId, label: "MCP & Protocols", icon: Layers },
         { id: "launchpad" as TabId, label: "Cloud Launchpad", icon: Rocket },
       ],
     },
     {
       title: "Assist",
       items: [
+        { id: "studio" as TabId, label: "Synthesis Studio", icon: Wand2 },
         { id: "copilot" as TabId, label: "Research Copilot", icon: Sparkles },
         { id: "approvals" as TabId, label: "Approvals", icon: CheckSquare, badge: approvalsCount },
       ],

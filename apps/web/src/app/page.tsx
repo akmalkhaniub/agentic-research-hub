@@ -15,6 +15,9 @@ import { LaunchpadView } from "@/components/LaunchpadView";
 import { WatchlistsView } from "@/components/WatchlistsView";
 import { ArenaView } from "@/components/ArenaView";
 import { SettingsView } from "@/components/SettingsView";
+import { StudioView } from "@/components/StudioView";
+import { MemoryView } from "@/components/MemoryView";
+import { ProtocolView } from "@/components/ProtocolView";
 import { CopilotView } from "@/components/CopilotView";
 import { ApprovalsView, ApprovalItemData } from "@/components/ApprovalsView";
 import { ComputeView } from "@/components/ComputeView";
@@ -238,6 +241,8 @@ export default function Home() {
             <GraphView onRunBenchmark={handleRunBenchmarkFromPattern} />
           )}
 
+          {currentTab === "memory" && <MemoryView />}
+
           {currentTab === "bench" && (
             <BenchView
               onDispatchBenchmark={(suite, contender, prov) =>
@@ -246,13 +251,17 @@ export default function Home() {
             />
           )}
 
+          {currentTab === "arena" && <ArenaView />}
+
+          {currentTab === "protocols" && <ProtocolView />}
+
           {currentTab === "launchpad" && <LaunchpadView />}
+
+          {currentTab === "studio" && <StudioView />}
 
           {currentTab === "watchlists" && (
             <WatchlistsView onSelectItem={(item) => setSelectedItem(item)} />
           )}
-
-          {currentTab === "arena" && <ArenaView />}
 
           {currentTab === "settings" && <SettingsView />}
         </main>

@@ -1,6 +1,6 @@
 # Agentic AI Research Hub: Autonomous Systems Research, Architecture Catalog, Multi-Tier Memory & GPU Experiment Dispatcher
 
-[![Next.js 16](https://img.shields.io/badge/Next.js-16.4.4_Turbopack-black?style=flat&logo=next.js)](#system-architecture)
+[![Next.js 16](https://img.shields.io/badge/Next.js-16.4.6_Turbopack-black?style=flat&logo=next.js)](#system-architecture)
 [![React 19](https://img.shields.io/badge/React-19.0.0-61dafb?style=flat&logo=react)](#frontend-architecture)
 [![Python 3.12+](https://img.shields.io/badge/Python-3.12%2B-0284c7.svg)](#quickstart)
 [![FastAPI](https://img.shields.io/badge/FastAPI-Pydantic_v2-10b981.svg)](#api-reference)
@@ -66,6 +66,9 @@ flowchart TB
 | :--- | :--- | :--- | :--- |
 | **Radar Feed** | Real-time paper, framework release, and lab post triage with faceted search. | arXiv XML API + GitHub v3 REST + RSS XML Parser. | Free public APIs |
 | **Today Briefing** | Daily executive AI briefing, top ranked picks, active GPU run telemetry, and quota meters. | Next.js 16 SSR + Gemini 2.5 Flash synthesis. | Gemini API Free Tier |
+| **Synthesis Studio** | Multi-agent research swarm (Scout, Critic, Architect) generating executive synthesis briefs. | 3-Agent Collaborative Swarm + LangGraph blueprint generator. | Local / Zero-cost |
+| **Memory Topology** | 3-tier cognitive memory inspector (Working, Episodic, Semantic) with consolidation compaction. | Context Window Token Tracker + Trajectory Store + Semantic Rule Extractor. | Local / Zero-cost |
+| **MCP & Protocols** | Model Context Protocol tool tester and Agent-to-Agent (A2A) discovery registry. | MCP 2025/2026 streamable HTTP tools + JSON-RPC 2.0 A2A interface specs. | Local / Zero-cost |
 | **Smart Watchlists** | Automated entity alerts for authors, framework releases, memory architectures & benchmark suites. | Real-time boolean query matcher + live in-app/webhook event triggers. | Local / Zero-cost |
 | **Architecture Arena** | Side-by-side empirical trace simulation (ReAct vs Supervisor vs Reflexion vs Hierarchical). | Multi-agent execution simulator + Token/Latency/Cost scorecard & win analysis. | Local / Zero-cost |
 | **Knowledge Graph** | Interactive topology graph connecting papers, frameworks, agent topologies, protocols & benchmarks. | Directed Graph Model + Category-driven layout & node inspector. | Local / Zero-cost |
@@ -121,6 +124,23 @@ Centralized control plane for runtime LLM providers and compute accounts:
 - **Live Connection Probes**: Measure round-trip ping latency and connectivity status to verify API authentication.
 - **System Telemetry**: Real-time monitoring of vector chunks, feed items count, fast RAG timeouts, and SQLite database health.
 
+### H. Autonomous Research Swarm & Deep Synthesis Studio
+Multi-agent collaborative research swarm for deep topic exploration:
+- **3-Agent Pipeline**: Coordinates a Literature Scout (ingesting preprints), Methodology Critic (evaluating statistical rigor and token cost), and System Architect (producing executable LangGraph topologies).
+- **Executive Synthesis Briefs**: Delivers publication-ready Markdown research reports, interactive swarm deliberation traces, and production architecture code snippets.
+
+### I. Cognitive Memory & Context Topology Inspector
+Real-time visualization and compaction simulator across 3 tiers of cognitive agent memory:
+- **Tier 1 (Working Context Window)**: Tracks active turn tokens, saturation percentage, and sliding window boundaries.
+- **Tier 2 (Episodic Trajectory Store)**: Persistent action-observation logs with task timestamps and consolidation tracking.
+- **Tier 3 (Semantic Long-Term Invariants)**: Compact consolidated rules and invariant heuristics.
+- **Consolidation Simulator**: Compresses un-consolidated episodic trajectories into semantic rules, freeing ~65% of context window capacity.
+
+### J. Model Context Protocol (MCP) & Agent-to-Agent (A2A) Registry
+Standardized interoperability hub conforming to 2025/2026 specs:
+- **MCP Tool Sandbox**: Inspect and test registered MCP tools (`arxiv_search`, `kaggle_dispatch`, `vector_recall`, `memory_compact`) with JSON schema validation.
+- **A2A Agent Cards**: Live registry of autonomous agent cards declaring capabilities, endpoints, rate limits, and JSON-RPC 2.0 communication interfaces.
+
 ---
 
 ## 4. Repository Structure
@@ -128,7 +148,7 @@ Centralized control plane for runtime LLM providers and compute accounts:
 ```text
 agentic-research-hub/
 ├── apps/
-│   └── web/                               # Next.js 16.4.4 App Router Frontend (React 19 + Turbopack)
+│   └── web/                               # Next.js 16.4.6 App Router Frontend (React 19 + Turbopack)
 │       ├── src/
 │       │   ├── app/
 │       │   │   ├── globals.css            # Zinc/slate theme tokens with high-contrast light/dark modes
@@ -146,10 +166,13 @@ agentic-research-hub/
 │       │       ├── LabView.tsx            # Experiment manager with Kaggle telemetry & Colab handoff
 │       │       ├── LaunchpadView.tsx      # Scale-to-zero cloud deployment blueprints & IaC generator
 │       │       ├── LibraryView.tsx        # Curated personal research library & Obsidian/BibTeX exporter
+│       │       ├── MemoryView.tsx         # 3-tier cognitive memory inspector & consolidation simulator
 │       │       ├── PatternsView.tsx       # Interactive architecture pattern visualizer & code tabs
+│       │       ├── ProtocolView.tsx       # Model Context Protocol (MCP) & A2A agent cards registry
 │       │       ├── RadarFeed.tsx          # Faceted feed with type filters & topic taxonomy tags
 │       │       ├── SettingsView.tsx       # LLM provider switcher, connection probes & credentials
 │       │       ├── Sidebar.tsx            # Tactile navigation grouped by Discover, Knowledge, Build, Assist
+│       │       ├── StudioView.tsx         # Autonomous 3-agent research synthesis swarm & briefs
 │       │       ├── TodayView.tsx          # Daily executive briefing, top picks & active runs
 │       │       └── WatchlistsView.tsx     # Smart topic & author entity monitors with real-time alerts
 │       ├── package.json                   # Next.js 16, React 19, Lucide, Tailwind CSS
@@ -169,10 +192,13 @@ agentic-research-hub/
 │   │   ├── launchpad.py                   # Scale-to-zero cloud blueprints (Terraform, Dockerfile, CLI)
 │   │   ├── library.py                     # Collections organizer & Markdown/Obsidian/BibTeX exporter
 │   │   ├── main.py                        # FastAPI endpoints with CORS, Pydantic v2 schemas & lifespan
+│   │   ├── memory.py                      # 3-tier cognitive memory state & compaction engine
 │   │   ├── models.py                      # Declarative ORM models: FeedItem, ExperimentRun, ApprovalItem
 │   │   ├── patterns.py                    # 9 canonical topologies with LangGraph, ADK & CrewAI code
+│   │   ├── protocols.py                   # MCP tool schemas & A2A agent card registry
 │   │   ├── rag.py                         # Multi-page PDF chunking, vector cosine search & citations
 │   │   ├── settings.py                    # Runtime provider configs, live health probes & cache stats
+│   │   ├── studio.py                      # Multi-agent synthesis swarm (Scout, Critic, Architect)
 │   │   └── watchlists.py                  # Smart topic & author entity matcher and alert triggers
 │   └── ingest/                            # Multi-Source Ingestion Pipeline
 │       ├── collectors/
@@ -258,6 +284,13 @@ The backend provides strict Pydantic v2 contracts with comprehensive typing:
 | `GET` | `/api/settings` | Returns active LLM provider, masked API keys status, fast RAG timeout, and DB stats. |
 | `POST` | `/api/settings` | Updates runtime inference provider, export preferences, and RAG configuration. |
 | `POST` | `/api/settings/test-connection` | Runs live round-trip latency and handshake verification ping to selected model provider. |
+| `GET` | `/api/studio/briefs` | Lists autonomous swarm-generated research briefs with scout and critic verdicts. |
+| `POST` | `/api/studio/synthesize` | Launches 3-agent research swarm (Scout, Critic, Architect) to synthesize a research brief. |
+| `GET` | `/api/memory/state` | Returns 3-tier cognitive memory inspector state (working context, episodic store, semantic rules). |
+| `POST` | `/api/memory/consolidate` | Compresses episodic trajectories into semantic rules, freeing active context window tokens. |
+| `GET` | `/api/protocols/tools` | Lists registered Model Context Protocol (MCP 2025/2026) tools with JSON input schemas. |
+| `POST` | `/api/protocols/tools/test` | Executes an MCP tool call within a validated sandbox environment. |
+| `GET` | `/api/protocols/a2a/agents` | Lists discovered Agent-to-Agent (A2A) capability cards with JSON-RPC 2.0 endpoints. |
 | `GET` | `/api/bench/suites` | Lists standardized evaluation benchmarks (GAIA-mini, τ²-bench, ToolBench, HumanEval). |
 | `GET` | `/api/bench/leaderboard` | Returns empirical benchmark leaderboard with success rates, latencies, and costs. |
 | `POST` | `/api/bench/run` | Triggers benchmark execution on Kaggle GPU kernel or generates Colab evaluation runner. |
